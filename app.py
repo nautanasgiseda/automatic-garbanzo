@@ -13,9 +13,6 @@ from flask import *
 
 app = Flask(__name__)
 
-# @app.route('/')
-# def index():
-#   return 'Response !!!'
 
 @app.route('/user/<username>')
 def show_user_profile(username):
