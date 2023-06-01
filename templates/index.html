@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Upload</title>
+</head>
+<body>
+    <h1>Image Upload</h1>
+
+    <form method="POST" action="/" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+    </form>
+
+    <hr>
+
+    <h2>Uploaded Images:</h2>
+
+    {% for file in files %}
+        <img src="{{ url_for('static', filename='uploads/' + file) }}" alt="{{ file }}" width="200" height="200">
+    {% endfor %}
+</body>
+</html>

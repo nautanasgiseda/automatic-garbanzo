@@ -126,16 +126,62 @@ def helloo(name=None):
 # app.add_url_rule(
 #     "/uploads/<name>", endpoint="download_file", build_only=True
 # )
-@app.route('/')  
-def main():  
-    return render_template("index.html")  
+# @app.route('/')  
+# def main():  
+#     return render_template("index.html")  
   
-@app.route('/success', methods = ['POST'])  
-def success():  
-    if request.method == 'POST':  
-        f = request.files['file']
-        f.save(f.filename)  
-        return render_template("Acknowledgement.html", name = f.filename)  
+# @app.route('/success', methods = ['POST'])  
+# def success():  
+#     if request.method == 'POST':  
+#         f = request.files['file']
+#         f.save(f.filename)  
+#         return render_template("Acknowledgement.html", name = f.filename)  
   
-if __name__ == '__main__':  
+# if __name__ == '__main__':  
+#     app.run(debug=True)
+
+# @app.route('/upload')
+# def upload():
+#     return render_template('upload.html')
+	
+# @app.route('/uploader', methods = ['GET', 'POST'])
+# def upload_file():
+#     if request.method == 'POST':
+#         f = request.files['file']
+#         f.save(secure_filename(f.filename))
+#         return 'file uploaded successfully'
+		
+# if __name__ == '__main__':
+#     app.run(debug = True)
+
+
+
+UPLOAD_FOLDER = 'static/photos'  # Folder to store uploaded images
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Allowed image file extensions
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    # Check if the file has an allowed extension
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/')
+def index():
+    # Render the index template with the list of uploaded images
+    files = os.listdir(app.config['UPLOAD_FOLDER'])
+    return render_template('index.html', files=files)
+
+@app.route('/', methods=['POST'])
+def upload_file():
+    # Handle the file upload process
+    file = request.files['file']
+
+    if file and allowed_file(file.filename):
+        filename = file.filename
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return redirect(url_for('index'))
+
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
     app.run(debug=True)
