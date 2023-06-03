@@ -1,184 +1,111 @@
 import os
-from distutils.log import debug
-from fileinput import filename
-from flask import render_template
-from flask import redirect
+import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, session
+from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
-from flask import Flask, jsonify
-from markupsafe import escape
-from flask import url_for
-from flask import request
-from flask import *  
 
 
 app = Flask(__name__)
+app.secret_key = '8000'  # Set a secret key for session encryption
+app.config['UPLOAD_FOLDER'] = 'static/photos'
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
+bcrypt = Bcrypt(app)
+DATABASE = 'users.db'
 
-
-@app.route('/user/<username>')
-def show_user_profile(username):
-    # show the user profile for that user
-    return f'User {escape(username)}'
-
-@app.route('/post/<int:post_id>')
-def show_post(post_id):
-    # show the post with the given id, the id is an integer
-    return f'Post {post_id}'
-
-@app.route('/path/<path:subpath>')
-def show_subpath(subpath):
-    # show the subpath after /path/
-    return f'Subpath {escape(subpath)}'
-
-@app.route("/<name>")
-def hello(name):
-    return f"Hello, {escape(name)}!"
-
-@app.route('/projects/')
-def projects():
-    return 'The project page'
-
-@app.route('/about')
-def about():
-    return 'The about page'
-
-# @app.route('/login')
-# def login():
-#     return 'login'
-
-@app.route('/user/<username>')
-def profile(username):
-    return f'{username}\'s profile'
-
-# with app.test_request_context():
-#     print(url_for('index'))
-#     print(url_for('login'))
-#     print(url_for('login', next='/'))
-#     print(url_for('profile', username='John Doe'))
-
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-#     if request.method == 'POST':
-#         return do_the_login()
-#     else:
-#         return show_the_login_form()
-
-@app.route('/hello/')
-@app.route('/hello/<name>')
-def helloo(name=None):
-    return render_template('saitas.html', name=name)
-
-# with app.test_request_context('/hello', method='POST'):
-#     # now you can do something with the request until the
-#     # end of the with block, such as basic assertions:
-#     assert request.path == '/hello'
-#     assert request.method == 'POST'
-
-
-
-# UPLOAD_FOLDER = 'static/photos'
-# ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
-
-# app = Flask(__name__)
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# def allowed_file(filename):
-#     return '.' in filename and \
-#            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# @app.route('/', methods=['GET', 'POST'])
-# def upload_file():
-#     if request.method == 'POST':
-#         # check if the post request has the file part
-#         if 'file' not in request.files:
-#             flash('No file part')
-#             return redirect(request.url)
-#         file = request.files['file']
-#         # If the user does not select a file, the browser submits an
-#         # empty file without a filename.
-#         if file.filename == '':
-#             flash('No selected file')
-#             return redirect(request.url)
-#         if file and allowed_file(file.filename):
-#             filename = secure_filename(file.filename)
-#             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-#             return redirect(url_for('download_file', name=filename))
-#     return '''
-#     <!doctype html>
-#     <title>Upload new File</title>
-#     <h1>Upload new File</h1>
-#     <form method=post enctype=multipart/form-data>
-#       <input type=file name=file>
-#       <input type=submit value=Upload>
-#     </form>
-#     '''
-
-
-
-# from flask import send_from_directory
-
-# @app.route('/uploads/<name>')
-# def download_file(name):
-#     return send_from_directory(app.config["UPLOAD_FOLDER"], name)
-
-# app.add_url_rule(
-#     "/uploads/<name>", endpoint="download_file", build_only=True
-# )
-# @app.route('/')  
-# def main():  
-#     return render_template("index.html")  
-  
-# @app.route('/success', methods = ['POST'])  
-# def success():  
-#     if request.method == 'POST':  
-#         f = request.files['file']
-#         f.save(f.filename)  
-#         return render_template("Acknowledgement.html", name = f.filename)  
-  
-# if __name__ == '__main__':  
-#     app.run(debug=True)
-
-# @app.route('/upload')
-# def upload():
-#     return render_template('upload.html')
-	
-# @app.route('/uploader', methods = ['GET', 'POST'])
-# def upload_file():
-#     if request.method == 'POST':
-#         f = request.files['file']
-#         f.save(secure_filename(f.filename))
-#         return 'file uploaded successfully'
-		
-# if __name__ == '__main__':
-#     app.run(debug = True)
-
-
-
-UPLOAD_FOLDER = 'static/photos'  # Folder to store uploaded images
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Allowed image file extensions
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def allowed_file(filename):
-    # Check if the file has an allowed extension
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-@app.route('/')
-def index():
-    # Render the index template with the list of uploaded images
-    files = os.listdir(app.config['UPLOAD_FOLDER'])
-    return render_template('index.html', files=files)
 
-@app.route('/', methods=['POST'])
-def upload_file():
-    # Handle the file upload process
-    file = request.files['file']
+def get_user_folder():
+    user_folder = os.path.join(app.config['UPLOAD_FOLDER'], session['username'])
+    if not os.path.exists(user_folder):
+        os.makedirs(user_folder)
+    return user_folder
 
-    if file and allowed_file(file.filename):
-        filename = file.filename
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return redirect(url_for('index'))
 
-    return redirect(url_for('index'))
+@app.route('/', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        session.pop('username', None)
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if not username or not password:
+            error = 'Invalid username or password'
+            return render_template('login.html', error=error)
+
+        with sqlite3.connect(DATABASE) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE username=?", (username,))
+            user = cursor.fetchone()
+
+            if user and bcrypt.check_password_hash(user[2], password):
+                session['username'] = user[1]
+                return redirect(url_for('dashboard'))
+
+        error = 'Invalid username or password'
+        return render_template('login.html', error=error)
+
+    return render_template('login.html')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        if password != confirm_password:
+            return render_template('register.html', error='Passwords do not match')
+
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+        with sqlite3.connect(DATABASE) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE username=?", (username,))
+            existing_user = cursor.fetchone()
+
+            if existing_user:
+                return render_template('register.html', error='Username already exists')
+
+            try:
+                cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
+                conn.commit()
+            except Exception as e:
+                return render_template('register.html', error='Error registering user: ' + str(e))
+
+        session['username'] = username
+        return redirect(url_for('dashboard'))
+
+    return render_template('register.html')
+
+
+@app.route('/dashboard', methods=['GET', 'POST'])
+def dashboard():
+    if request.method == 'POST':
+        file = request.files['file']
+        description = request.form['description']
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            user_folder = get_user_folder()
+            file_path = os.path.join(user_folder, filename)
+            file.save(file_path)
+
+
+    user_folder = get_user_folder()
+    files = os.listdir(user_folder)
+    return render_template('dashboard.html', files=files)
+
+
+@app.route('/dashboard_file/<filename>')
+def dashboard_file(filename):
+    user_folder = get_user_folder()
+    file_path = os.path.join(user_folder, filename)
+    return render_template('dashboard_file.html', filename=filename, file_path=file_path)
+
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
