@@ -20,14 +20,10 @@
         }
 
         .image-item img {
-            max-width: 100%;
-            max-height: 200px;
-            object-fit: cover;
-        }
-
-        .image-item .description {
-            margin-top: 10px;
-            text-align: center;
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
         }
 
         .upload-button {
@@ -47,6 +43,23 @@
             top: 10px;
             right: 10px;
         }
+
+        .delete-button {
+            background-color: red;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .delete-button:hover {
+            background-color: darkred;
+        }
+
+        .confirmation {
+            color: green;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -54,7 +67,6 @@
 
     <form method="POST" action="/dashboard" enctype="multipart/form-data">
         <input type="file" name="file">
-        <input type="text" name="description" placeholder="Description">
         <button class="upload-button" type="submit">Upload</button>
     </form>
 
@@ -67,7 +79,7 @@
     <h2>Uploaded Images:</h2>
 
     <div class="image-grid">
-        {% for file in files %}
+        {% for file in files if file not in deleted_files %}
             <div class="image-item">
                 <img src="{{ url_for('static', filename='photos/' + session['username'] + '/' + file) }}" alt="{{ file }}">
                 <div class="description">{{ file }}</div>
@@ -77,5 +89,9 @@
             </div>
         {% endfor %}
     </div>
+
+    {% if 'deleted_files' in session %}
+        <p class="confirmation">The following files have been deleted: {{ session['deleted_files'] }}</p>
+    {% endif %}
 </body>
 </html>

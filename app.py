@@ -96,17 +96,36 @@ def dashboard():
 
         if request.method == 'POST':
             file = request.files['file']
-            description = request.form['description']
 
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(user_folder, filename))
-                # You can store the image filename and description in the database for persistent storage
+                # You can store the image filename in the database for persistent storage
+
+        if request.method == 'GET' and 'deleted_files' in session:
+            deleted_files = session['deleted_files']
+        else:
+            deleted_files = []
 
         user_files = os.listdir(user_folder)
-        return render_template('dashboard.html', files=user_files)
+        display_files = [file for file in user_files if file not in deleted_files]
+        return render_template('dashboard.html', username=username, files=display_files)
 
     return redirect(url_for('login'))
+
+
+@app.route('/delete/<filename>', methods=['POST'])
+def delete(filename):
+    if 'username' in session:
+        username = session['username']
+        user_folder = get_user_folder(username)
+        file_path = os.path.join(user_folder, filename)
+
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            session.setdefault('deleted_files', []).append(filename)
+
+    return redirect(url_for('dashboard'))
 
 
 @app.route('/logout', methods=['POST'])
