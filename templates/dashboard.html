@@ -41,15 +41,25 @@
         .upload-button:hover {
             background-color: darkred;
         }
+
+        .sign-out {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>Welcome to the page, {{ session['username'] }}</h1>
+    <h1>Welcome to the page, {{ username }}</h1>
 
     <form method="POST" action="/dashboard" enctype="multipart/form-data">
         <input type="file" name="file">
         <input type="text" name="description" placeholder="Description">
         <button class="upload-button" type="submit">Upload</button>
+    </form>
+
+    <form method="POST" action="/logout" class="sign-out">
+        <button class="sign-out-button" type="submit">Sign Out</button>
     </form>
 
     <hr>

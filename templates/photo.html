@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ file.filename }}</title>
+</head>
+<body>
+    <h1>{{ file.filename }}</h1>
+    <img src="{{ url_for('static', filename='photos/' + file.filename) }}" alt="{{ file.filename }}">
+    <h2>Comments</h2>
+    <ul>
+        {% for comment in file.comments %}
+            <li>{{ comment }}</li>
+        {% endfor %}
+    </ul>
+    <form action="{{ url_for('photo', filename=file.filename) }}" method="POST">
+        <input type="text" name="comment" placeholder="Leave a comment">
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
